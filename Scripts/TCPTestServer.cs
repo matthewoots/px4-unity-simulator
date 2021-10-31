@@ -35,6 +35,7 @@ public class TCPTestServer : MonoBehaviour {
 
 	MAVLink.mavlink_heartbeat_t Hb;
 	MAVLink.mavlink_hil_actuator_controls_t controls;
+	MAVLink.mavlink_hil_gps_t gps;
 	MAVLink.mavlink_hil_sensor_t sensors;
 	MAVLink.mavlink_hil_state_quaternion_t state;
 		
@@ -98,11 +99,16 @@ public class TCPTestServer : MonoBehaviour {
 			MAVLink.MavlinkParse mavlink = new MAVLink.MavlinkParse();
 			sensors = gameObject.GetComponent<SensorSuite>()._sensor_data;
 			state = gameObject.GetComponent<SensorSuite>()._state_data;
+			gps = gameObject.GetComponent<SensorSuite>()._gps_data;
 			byte[] buffer_sensors = mavlink.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.HIL_SENSOR, sensors);
 			byte[] buffer_state = mavlink.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.HIL_STATE, state);
+			byte[] buffer_gps = mavlink.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.HIL_GPS, gps);
 			NetworkStream stream = connectedTcpClient.GetStream();
+
+			stream.Write(buffer_gps, 0, buffer_gps.Length); 
 			stream.Write(buffer_sensors, 0, buffer_sensors.Length);   
-			stream.Write(buffer_state, 0, buffer_state.Length);            
+			stream.Write(buffer_state, 0, buffer_state.Length);   
+			         
 			Debug.Log("Server sent his message - should be received by client");
 			// // Get a stream object for writing. 			
 			// NetworkStream stream = connectedTcpClient.GetStream(); 			
