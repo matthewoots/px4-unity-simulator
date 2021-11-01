@@ -1,0 +1,3 @@
+[submodule "ExternalPackages/RapidGUI"]
+	path = ExternalPackages/RapidGUI
+	url = git@github.com:fuqunaga/RapidGUI.git
