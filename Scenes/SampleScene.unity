@@ -23,10 +23,10 @@ RenderSettings:
   m_AmbientSkyColor: {r: 0.212, g: 0.227, b: 0.259, a: 1}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
-  m_AmbientIntensity: 1.9
+  m_AmbientIntensity: 2.63
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 2100000, guid: 39730d27863218b45bb449f68bad98d3, type: 2}
+  m_SkyboxMaterial: {fileID: 2100000, guid: 9c488e6c8d1380f41ad85a57c71871d7, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -97,7 +97,7 @@ LightmapSettings:
     m_ExportTrainingData: 0
     m_TrainingDataDestination: TrainingData
     m_LightProbeSampleCountMultiplier: 4
-  m_LightingDataAsset: {fileID: 0}
+  m_LightingDataAsset: {fileID: 112000000, guid: 73fea2eab4bbde97f8f043e3ce9b4734, type: 2}
   m_LightingSettings: {fileID: 0}
 --- !u!196 &4
 NavMeshSettings:
@@ -153,14 +153,14 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 77665352}
   serializedVersion: 2
-  m_Mass: 0.0000001
+  m_Mass: 0.5
   m_Drag: 0
   m_AngularDrag: 0.05
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 1
 --- !u!114 &77665354
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -308,7 +308,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 78822983}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a539244d3f47f8221a427f383cc34ed5, type: 3}
+  m_Script: {fileID: 11500000, guid: 239ac3314d708282994f3b02fb6edfa0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   Object: {fileID: 77665352}
@@ -539,11 +539,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 860134619}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: efb340fc86dd46580a12e3ae144e0046, type: 3}
+  m_Script: {fileID: 11500000, guid: 618b21f020397b78dad08f8c20264798, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   target: {fileID: 77665358}
-  distance: 6
+  distance: 10
   xSpeed: 2
   ySpeed: 2
   yMinLimit: -90
@@ -642,9 +642,9 @@ TerrainCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1133288301}
-  m_Material: {fileID: 13400000, guid: 229c05b55ed734f16b2832016d4d7aff, type: 2}
+  m_Material: {fileID: 13400000, guid: 5de7e60c008f2ce4ca5c2bb88c15e062, type: 2}
   m_Enabled: 1
-  m_TerrainData: {fileID: 15600000, guid: 12d7488c8cf4c9d5787d59f4bd4ea22d, type: 2}
+  m_TerrainData: {fileID: 15600000, guid: a624c8f46751daf5b995ecad4130a6c1, type: 2}
   m_EnableTreeColliders: 1
 --- !u!218 &1133288303
 Terrain:
@@ -655,7 +655,7 @@ Terrain:
   m_GameObject: {fileID: 1133288301}
   m_Enabled: 1
   serializedVersion: 6
-  m_TerrainData: {fileID: 15600000, guid: 12d7488c8cf4c9d5787d59f4bd4ea22d, type: 2}
+  m_TerrainData: {fileID: 15600000, guid: a624c8f46751daf5b995ecad4130a6c1, type: 2}
   m_TreeDistance: 5000
   m_TreeBillboardDistance: 50
   m_TreeCrossFadeLength: 5
@@ -670,7 +670,7 @@ Terrain:
   m_DrawInstanced: 0
   m_DrawTreesAndFoliage: 1
   m_ReflectionProbeUsage: 1
-  m_MaterialTemplate: {fileID: 2100000, guid: c5037cf253af0259fb215c9a1e4d5ed1, type: 2}
+  m_MaterialTemplate: {fileID: 10652, guid: 0000000000000000f000000000000000, type: 0}
   m_BakeLightProbesForTrees: 1
   m_PreserveTreePrototypeLayers: 0
   m_DeringLightProbesForTrees: 1

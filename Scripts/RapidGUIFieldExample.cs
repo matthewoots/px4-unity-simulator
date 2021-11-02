@@ -43,16 +43,27 @@ namespace RapidGUI.Example
             MAVLink.mavlink_hil_gps_t _gps = ss._gps_data;
 
             Vector3 accel = new Vector3(_sensor.xacc, _sensor.yacc, _sensor.zacc);
-            Vector3 accelVal = RGUI.Field(accel, "Accel [m/s/s]");
+            Vector3 accelVal = RGUI.Field(return_in_dp(accel, 2), "Accel [m/s/s]");
             Vector3 gyro = new Vector3(_sensor.xgyro, _sensor.ygyro, _sensor.zgyro);
-            Vector3 gyroVal = RGUI.Field(gyro, "Gyro [rad/s]");
+            Vector3 gyroVal = RGUI.Field(return_in_dp(gyro, 2), "Gyro [rad/s]");
 
             float temperatureVal = RGUI.Field(_sensor.temperature, "Temperature [degC]");
             float abs_pressureVal = RGUI.Field(_sensor.abs_pressure, "Abs pressure [hPa]");
             float pressure_altVal = RGUI.Field(_sensor.pressure_alt, "Altitude Pa");
 
             Vector3 mag = new Vector3(_sensor.xmag, _sensor.ymag, _sensor.zmag);
-            Vector3 magVal = RGUI.Field(mag, "Mag [gauss]");
+            Vector3 magVal = RGUI.Field(return_in_dp(mag, 3), "Mag [gauss]");
+
+            int fields_updatedVal = RGUI.Field((int)_sensor.fields_updated, "Sensor Fields Updated");
+
+            float rollspeedVal = RGUI.Field(_state.rollspeed, "Rollspeed [rad/s]");
+            float pitchspeedVal = RGUI.Field(_state.pitchspeed, "Pitchspeed [rad/s]");
+            float yawspeedVal = RGUI.Field(_state.yawspeed, "Yawspeed [rad/s]");
+        
+            float[] attitudeVal = RGUI.Field(_state.attitude_quaternion, "Quarternion");
+
+            Vector2 gps_latlon = new Vector2(_gps.lat, _gps.lon);
+            Vector2 gpsVal =  RGUI.Field(gps_latlon, "GPS");
 
             // stringVal = RGUI.Field(stringVal, "string");
             // boolVal = RGUI.Field(boolVal, "bool");
@@ -86,5 +97,21 @@ namespace RapidGUI.Example
             //     }
             // });
         }
+
+        public static Vector3 return_in_dp(Vector3 vector3, int decimalPlaces)
+        {
+
+            float multiplier = 1;
+            for (int i = 0; i < decimalPlaces; i++)
+            {
+                multiplier *= 10f;
+            }
+
+            return new Vector3(
+                Mathf.Round(vector3.x * multiplier) / multiplier,
+                Mathf.Round(vector3.y * multiplier) / multiplier,
+                Mathf.Round(vector3.z * multiplier) / multiplier);
+        }
+     
     }
 }

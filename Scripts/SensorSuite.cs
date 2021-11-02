@@ -68,27 +68,27 @@ public class SensorSuite : MonoBehaviour
         _sensor_data.time_usec = ut;
 
         // we must flip all the rotations since we are using right hand not left hand (-ve)
-        _sensor_data.xacc = rng(RUFtoFRD(getLocalAcc()).x, 0.01f);
-        _sensor_data.yacc = rng(RUFtoFRD(getLocalAcc()).y, 0.01f);
-        _sensor_data.zacc = rng(RUFtoFRD(getLocalAcc()).z - MathUtils.G, 0.01f);
+        _sensor_data.xacc = RUFtoFRD(getLocalAcc()).x + rng( 0, 0.01f);
+        _sensor_data.yacc = RUFtoFRD(getLocalAcc()).y + rng( 0, 0.01f);
+        _sensor_data.zacc = RUFtoFRD(getLocalAcc()).z - MathUtils.G + rng( 0, 0.01f);
 
-        _sensor_data.xgyro = RUFtoFRD(getLocalAngVel()).x;
-        _sensor_data.ygyro = RUFtoFRD(getLocalAngVel()).y;
-        _sensor_data.zgyro = RUFtoFRD(getLocalAngVel()).z;
+        _sensor_data.xgyro = RUFtoFRD(getLocalAngVel()).x + rng( 0, 0.005f);;
+        _sensor_data.ygyro = RUFtoFRD(getLocalAngVel()).y + rng( 0, 0.005f);;
+        _sensor_data.zgyro = RUFtoFRD(getLocalAngVel()).z + rng( 0, 0.005f);;
 
         _sensor_data.fields_updated = (uint)SensorSource.ACCEL | (uint)SensorSource.GYRO;
 
-        _sensor_data.temperature = rng(getTempLocal(-transform.position.y), 2.0f);
-        _sensor_data.abs_pressure = rng(getAbsolutePressure(-transform.position.y), 2.0f);
-        _sensor_data.pressure_alt = rng(getPressureAltitude(-transform.position.y), 0.05f);
+        _sensor_data.temperature = getTempLocal(-transform.position.y)+ rng( 0, 0.2f);
+        _sensor_data.abs_pressure = getAbsolutePressure(-transform.position.y) + rng( 0, 0.2f);
+        _sensor_data.pressure_alt = getPressureAltitude(-transform.position.y) + rng( 0, 0.05f);
         // Debug.Log("baro alt : " + _sensor_data.pressure_alt);
 
         _sensor_data.fields_updated = _sensor_data.fields_updated | (uint)SensorSource.BARO;
 
         Vector3 mag = getMag(gps);
-        _sensor_data.xmag = mag.x;
-        _sensor_data.ymag = mag.y;
-        _sensor_data.zmag = mag.z;
+        _sensor_data.xmag = mag.x + rng( 0, 0.01f);
+        _sensor_data.ymag = mag.y + rng( 0, 0.01f);
+        _sensor_data.zmag = mag.z + rng( 0, 0.01f);
 
         _sensor_data.fields_updated = _sensor_data.fields_updated | (uint)SensorSource.MAG;
 
@@ -112,9 +112,9 @@ public class SensorSuite : MonoBehaviour
 
         _state_data.attitude_quaternion = attitude;
         
-        _state_data.rollspeed = getLocalNEDAngVel().x;
-        _state_data.pitchspeed = getLocalNEDAngVel().y;
-        _state_data.yawspeed = getLocalNEDAngVel().z;
+        _state_data.rollspeed = getLocalNEDAngVel().x + rng( 0, 0.001f);
+        _state_data.pitchspeed = getLocalNEDAngVel().y + rng( 0, 0.001f);
+        _state_data.yawspeed = getLocalNEDAngVel().z + rng( 0, 0.001f);
         
         _state_data.lat = (int)(gps_rad.x * MathUtils.rad2deg * 1e7);
         _state_data.lon = (int)(gps_rad.y  * MathUtils.rad2deg * 1e7);
