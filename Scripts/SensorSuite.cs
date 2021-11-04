@@ -3,22 +3,46 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/**
+* Helper functions
+* Transform.TransformDirection : vector from local space to world space.
+* Transform.InverseTransformDirection : vector from world space to local space.
+* etc
+* var locVel = transform.InverseTransformDirection(rigidbody.velocity);
+* locVel.z = MovSpeed;
+* rigidbody.velocity = transform.TransformDirection(locVel);
+*/
+
+/**
+* @note Frames of reference:
+* g - gazebo (ENU), east, north, up
+* r - rotors imu frame (NWU/FLU), forward, left, up
+* b - px4 (NWU -> NED) forward, right down
+* n - px4 (ENU -> NED) north, east, down
+*/
+
 public class SensorSuite : MonoBehaviour
 {
     public MAVLink.mavlink_hil_sensor_t _sensor_data;
     public MAVLink.mavlink_hil_state_quaternion_t _state_data;
     public MAVLink.mavlink_hil_gps_t _gps_data;
     public Vector2 home = new Vector2((float)1.299851, (float)103.772243);
-    public float home_alt = 0.0f;
     public Vector2 gps;
-    Quaternion q_ENU_to_NED = new Quaternion(0, (float)0.70711, (float)0.70711, 0);
-    Rigidbody rb;
-    Transform tf;
-    Vector3 lvel;
-    Vector3 prev_lvel;
-    Vector3 prev_vel;
-    Vector3 lacc;
-    Quaternion lrot;
+    public bool init;
+    public float initializationTime = 2.0f;
+
+    private float amsl_offset = 2.0f;
+    private Vector3 gravity = new Vector3(0.0f,0.0f,-9.81f);
+    private float home_alt;
+    private float wait = 0.0f;
+    private Quaternion q_ENU_to_NED = new Quaternion(0, (float)0.70711, (float)0.70711, 0);
+    private Rigidbody rb;
+    private Transform tf;
+    private Vector3 lvel;
+    private Vector3 prev_lvel;
+    private Vector3 prev_vel;
+    private Vector3 lacc;
+    private Quaternion lrot;
     private SensorSource ss;
     enum SensorSource {
         ACCEL = 0b111,
@@ -42,6 +66,18 @@ public class SensorSuite : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        // Do a initiatisation check, this helps the physics to run first and then we can set up the start/ home params
+        if (!init)
+        {
+            // wait for 2s
+            wait = Time.deltaTime + wait;
+            if (wait < initializationTime)
+                return;
+            Debug.Log("[Init ready after " + wait + "s]");
+            init = true;
+            home_alt = -transform.position.y;
+        }
+        
         update_sensor_data();
     }
 
@@ -56,7 +92,15 @@ public class SensorSuite : MonoBehaviour
         lvel = getLocalVel();
         lacc = getLocalAcc();
 
-        Quaternion q_ned = QuaternionRUFLH2NEDRH(transform.rotation);
+        Quaternion q_ned_local = QuaternionRUFLH2NEDRH(transform.rotation);
+        Quaternion q_nwu_local = q_ned_local * Quaternion.Inverse(MathUtils.q_NWU_to_NED);
+        Quaternion global2ned = QuaternionRUFLH2NEDRH(new Quaternion(0,0,0,0));
+
+        float alt_diff = -transform.position.y - home_alt + amsl_offset;
+
+        int gps_lat = (int)(gps_rad.x * MathUtils.rad2deg * 1e7);
+        int gps_lon = (int)(gps_rad.y * MathUtils.rad2deg * 1e7);
+        int gps_alt = (int)(alt_diff * 1000);
 
         // IMPORTANT The Sensors are right-handed.  Unity is left handed.
         // Axis Alignment = RUF to FRD
@@ -67,33 +111,37 @@ public class SensorSuite : MonoBehaviour
         ulong ut = (ulong)(Time.time * 1e6);
         _sensor_data.time_usec = ut;
 
-        // we must flip all the rotations since we are using right hand not left hand (-ve)
-        _sensor_data.xacc = RUFtoFRD(getLocalAcc()).x + rng( 0, 0.01f);
-        _sensor_data.yacc = RUFtoFRD(getLocalAcc()).y + rng( 0, 0.01f);
-        _sensor_data.zacc = RUFtoFRD(getLocalAcc()).z - MathUtils.G + rng( 0, 0.01f);
+        Vector3 LocalAcceleration = getLocalAcc() + transform.InverseTransformDirection(gravity);
 
-        _sensor_data.xgyro = RUFtoFRD(getLocalAngVel()).x + rng( 0, 0.005f);;
-        _sensor_data.ygyro = RUFtoFRD(getLocalAngVel()).y + rng( 0, 0.005f);;
-        _sensor_data.zgyro = RUFtoFRD(getLocalAngVel()).z + rng( 0, 0.005f);;
+        /** q_FLU_to_FRD * (linearAccel - rotated(gravity)) **/
+        // we must flip all the rotations since we are using right hand not left hand (-ve)
+        _sensor_data.xacc = (q_nwu_local * LocalAcceleration).x + rng( 0, 0.005f);
+        _sensor_data.yacc = (q_nwu_local * LocalAcceleration).y + rng( 0, 0.005f);
+        _sensor_data.zacc = (q_nwu_local * LocalAcceleration).z;
+
+        /** q_FLU_to_FRD * (AngAccel) **/
+        _sensor_data.xgyro = (q_nwu_local * getLocalAngVel()).x + rng( 0, 0.005f);
+        _sensor_data.ygyro = (q_nwu_local * getLocalAngVel()).y + rng( 0, 0.005f);
+        _sensor_data.zgyro = (q_nwu_local * getLocalAngVel()).z + rng( 0, 0.005f);
 
         _sensor_data.fields_updated = (uint)SensorSource.ACCEL | (uint)SensorSource.GYRO;
 
-        _sensor_data.temperature = getTempLocal(-transform.position.y)+ rng( 0, 0.2f);
-        _sensor_data.abs_pressure = getAbsolutePressure(-transform.position.y) + rng( 0, 0.2f);
-        _sensor_data.pressure_alt = getPressureAltitude(-transform.position.y) + rng( 0, 0.05f);
+        _sensor_data.temperature = getTempLocal(alt_diff) + rng(0, 0.005f);
+        _sensor_data.abs_pressure = getAbsolutePressure(alt_diff) + rng(0, 0.0005f);
+        _sensor_data.pressure_alt = getPressureAltitude(alt_diff) + rng(0, 0.0005f);
         // Debug.Log("baro alt : " + _sensor_data.pressure_alt);
 
         _sensor_data.fields_updated = _sensor_data.fields_updated | (uint)SensorSource.BARO;
 
         Vector3 mag = getMag(gps);
-        _sensor_data.xmag = mag.x + rng( 0, 0.01f);
-        _sensor_data.ymag = mag.y + rng( 0, 0.01f);
-        _sensor_data.zmag = mag.z + rng( 0, 0.01f);
+        _sensor_data.xmag = mag.x + rng( 0, 0.005f);
+        _sensor_data.ymag = mag.y + rng( 0, 0.005f);
+        _sensor_data.zmag = mag.z + rng( 0, 0.005f);
 
         _sensor_data.fields_updated = _sensor_data.fields_updated | (uint)SensorSource.MAG;
 
         // _sensor_data.diff_pressure = diff_pressure;
-        // _sensor_data.id = id;
+        // _sensor_data.id = 0;
 
         // ignition::math::Quaterniond q_nb = q_ENU_to_NED * q_gr * q_FLU_to_FRD.Inverse();
         // q_gr is global frame
@@ -105,32 +153,38 @@ public class SensorSuite : MonoBehaviour
         // ------- QUATERNION STATE --------
         _state_data.time_usec = ut;
         float[] attitude = new float[4];
-        attitude[0] = q_ned.w;
-        attitude[1] = q_ned.x;
-        attitude[2] = q_ned.y;
-        attitude[3] = q_ned.z;
+        attitude[0] = q_nwu_local.w;
+        attitude[1] = q_nwu_local.x;
+        attitude[2] = q_nwu_local.y;
+        attitude[3] = q_nwu_local.z;
 
         _state_data.attitude_quaternion = attitude;
         
-        _state_data.rollspeed = getLocalNEDAngVel().x + rng( 0, 0.001f);
-        _state_data.pitchspeed = getLocalNEDAngVel().y + rng( 0, 0.001f);
-        _state_data.yawspeed = getLocalNEDAngVel().z + rng( 0, 0.001f);
+        _state_data.rollspeed = (q_nwu_local * getLocalVel()).x + rng( 0, 0.001f);
+        _state_data.pitchspeed = (q_nwu_local * getLocalVel()).y + rng( 0, 0.001f);
+        _state_data.yawspeed = (q_nwu_local * getLocalVel()).z + rng( 0, 0.001f);
         
-        _state_data.lat = (int)(gps_rad.x * MathUtils.rad2deg * 1e7);
-        _state_data.lon = (int)(gps_rad.y  * MathUtils.rad2deg * 1e7);
-        _state_data.alt = (int)((transform.position.y - home_alt) * 1000);
+        _state_data.lat = gps_lat;
+        _state_data.lon = gps_lon;
+        _state_data.alt = gps_alt;
         // Debug.Log("gps alt : " + _state_data.alt);
 
-        _state_data.vx = (short)(RUFtoFRD(getLocalVel()).x * 100);
-        _state_data.vy = (short)(RUFtoFRD(getLocalVel()).y * 100);
-        _state_data.vz = (short)(RUFtoFRD(getLocalVel()).z * 100);
+        // q_ENU_to_NED * global vector **/
+        _state_data.vx = (short)((global2ned * rb.velocity).x * 100);
+        _state_data.vy = (short)((global2ned * rb.velocity).y * 100);
+        _state_data.vz = (short)((global2ned * rb.velocity).z * 100);
        
-        _state_data.xacc = (short)(RUFtoFRD(getLocalAcc()).x * 1000);
-        _state_data.yacc = (short)(RUFtoFRD(getLocalAcc()).y * 1000);
-        _state_data.zacc = (short)(RUFtoFRD(getLocalAcc()).z * 1000);
+        /** q_FLU_to_FRD * local vector **/
+        _state_data.xacc = (short)((q_nwu_local * getLocalAcc()).x * 1000);
+        _state_data.yacc = (short)((q_nwu_local * getLocalAcc()).y * 1000);
+        _state_data.zacc = (short)((q_nwu_local * getLocalAcc()).z * 1000);
 
-        // _state_data.ind_airspeed = ind_airspeed;
-        // _state_data.true_airspeed = true_airspeed;
+        /** q_FLU_to_FRD * local vector **/
+        // assumed indicated airspeed due to flow aligned with pitot (body x)
+        _state_data.ind_airspeed = (ushort)(q_nwu_local * getLocalVel()).x;
+        
+        /** GetWorldLinearVel() -  wind_vel_).GetLength() * 100 **/
+        _state_data.true_airspeed = (ushort)(rb.velocity.magnitude * 100);
 
 
         // ------- GPS --------
@@ -141,17 +195,17 @@ public class SensorSuite : MonoBehaviour
         _gps_data.time_usec = ut;
 
         _gps_data.fix_type = (byte)3;
-        _gps_data.lat = (int)(gps_rad.x * 180 / MathUtils.M_PI * 1e7);
-        _gps_data.lon = (int)(gps_rad.y  * 180 / MathUtils.M_PI * 1e7);
-        _gps_data.alt = (int)((transform.position.y - home_alt) * 1000);
+        _gps_data.lat = gps_lat;
+        _gps_data.lon = gps_lon;
+        _gps_data.alt = gps_alt;
         _gps_data.eph = (ushort)(std_xy_ * 100.0);
         _gps_data.epv = (ushort)(std_z_ * 100.0);
 
-        Vector3 v = RUFtoFRD(rb.velocity);
+        Vector3 v = global2ned * rb.velocity;
         _gps_data.vel = (ushort)(Mathf.Sqrt(Mathf.Pow(v.x,2) + Mathf.Pow(v.y,2) + Mathf.Pow(v.z,2)));
         _gps_data.vn = (short)(v.x * 100.0);
         _gps_data.ve = (short)(v.y * 100.0);
-        _gps_data.vd = (short)(-v.z * 100.0);
+        _gps_data.vd = (short)(v.z * 100.0);
 
         float cog = Mathf.Atan2(v.y, v.x);
         _gps_data.cog = (ushort)(MathUtils.GetDegrees360(cog) * 100.0);
@@ -169,16 +223,16 @@ public class SensorSuite : MonoBehaviour
 
     Vector3 getLocalNEDAcc()
     {
-        Vector3 lnedacc = QuaternionRUFLH2NEDRH(new Quaternion(0,0,0,1)) * getLocalAcc();
+        Vector3 lnedacc = QuaternionRUFLH2NEDRH(new Quaternion(0,0,0,0)) * getLocalAcc();
         // Debug.Log("local NED acceleration : " + lnedacc);
         return lnedacc;
     }
 
-    Vector3 getGloballAcc()
+    Vector3 getGlobalAcc()
     {
         Vector3 acc = (rb.velocity - prev_vel)/Time.deltaTime;
         prev_vel = rb.velocity;
-        return transform.rotation * acc;
+        return acc;
     }
 
     Vector3 getLocalVel()
@@ -249,7 +303,7 @@ public class SensorSuite : MonoBehaviour
         // calculate abs_pressure using an ISA model for the tropsphere (valid up to 11km above MSL)
         float lapse_rate = 0.0065f; // reduction in temperature with altitude (Kelvin/m)
         float temperature_msl = 288.0f; // temperature at MSL (Kelvin)
-        float alt_msl = home_alt - pose_n_z;
+        float alt_msl = pose_n_z - home_alt;
         float temperature_local = temperature_msl - lapse_rate * alt_msl;
         float pressure_ratio = Mathf.Pow(temperature_msl / temperature_local, 5.256f);
         float pressure_msl = 101325.0f; // pressure at MSL
@@ -262,12 +316,12 @@ public class SensorSuite : MonoBehaviour
     {
         float lapse_rate = 0.0065f; // reduction in temperature with altitude (Kelvin/m)
         float temperature_msl = 288.0f; // temperature at MSL (Kelvin)
-        float alt_msl = home_alt - pose_n_z;
+        float alt_msl = pose_n_z - home_alt;
         float temperature_local = temperature_msl - lapse_rate * alt_msl;
         float density_ratio = Mathf.Pow(temperature_msl / temperature_local, 4.256f);
         float rho = 1.225f / density_ratio;
 
-        return alt_msl / (1 * rho);
+        return alt_msl / (gravity.magnitude * rho);
         // can add noise abs_pressure_noise + baro_drift_pa_
         // gravity_W_.Length() = 3 since Vector3
     }
@@ -276,7 +330,7 @@ public class SensorSuite : MonoBehaviour
     {
         float lapse_rate = 0.0065f; // reduction in temperature with altitude (Kelvin/m)
         float temperature_msl = 288.0f; // temperature at MSL (Kelvin)
-        float alt_msl = home_alt - pose_n_z;
+        float alt_msl = pose_n_z - home_alt;
         float temperature_local = temperature_msl - lapse_rate * alt_msl;
         return temperature_local - 273.0f;
     }

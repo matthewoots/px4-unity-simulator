@@ -65,6 +65,9 @@ namespace RapidGUI.Example
             Vector2 gps_latlon = new Vector2(_gps.lat, _gps.lon);
             Vector2 gpsVal =  RGUI.Field(gps_latlon, "GPS");
 
+            int gps_alt = _gps.alt;
+            int gps_altVal =  RGUI.Field(gps_alt, "GPS alt");
+
             // stringVal = RGUI.Field(stringVal, "string");
             // boolVal = RGUI.Field(boolVal, "bool");
             // intVal = RGUI.Field(intVal, "int");

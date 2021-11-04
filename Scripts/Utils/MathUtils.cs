@@ -2,6 +2,35 @@ using UnityEngine;
 
 public static class MathUtils
 {
+    /**
+    * @note Frames of reference:
+    * g - gazebo (ENU), east, north, up
+    * r - rotors imu frame (NWU/FLU), forward, left, up
+    * b - px4 (NWU -> NED) forward, right down
+    * n - px4 (ENU -> NED) north, east, down
+    */
+
+    /**
+    * @brief Quaternion for rotation between ENU and NED frames
+    *
+    * NED to ENU: +PI/2 rotation about Z (Down) followed by a +PI rotation around X (old North/new East)
+    * ENU to NED: +PI/2 rotation about Z (Up) followed by a +PI rotation about X (old East/new North)
+    * This rotation is symmetric, so q_ENU_to_NED == q_NED_to_ENU.
+
+    * ignition math = (w,x,y,z)
+    * Unity3D = (x,y,z,w)
+    */
+    public static Quaternion q_ENU_to_NED = new Quaternion(0.70711f, 0.70711f, 0.0f, 0.0f);
+
+    /**
+    * @brief Quaternion for rotation between body FLU and body FRD frames
+    *
+    * +PI rotation around X (Forward) axis rotates from Forward, Right, Down (aircraft)
+    * to Forward, Left, Up (base_link) frames and vice-versa.
+    * This rotation is symmetric, so q_FLU_to_FRD == q_FRD_to_FLU.
+    */
+    public static Quaternion q_NWU_to_NED = new Quaternion(1.0f, 0.0f, 0.0f, 0.0f);
+
     // Km/h <--> M/s
     public const float Ms2Kmh = 3.6f;
     public const float Kmh2Ms = 1f / 3.6f;
