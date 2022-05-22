@@ -24,6 +24,8 @@ public class TCPTestServer : MonoBehaviour {
 	private TcpClient connectedTcpClient; 	
 	#endregion 	
 
+	private bool isOpen;
+
     //the name of the connection, not required but better for overview if you have more than 1 connections running
 	public string conName = "localhost";
 	
@@ -41,6 +43,7 @@ public class TCPTestServer : MonoBehaviour {
 		
 	// Use this for initialization
 	void Start () { 		
+		isOpen = true;
 		// Start TcpServer background thread 		
 		tcpListenerThread = new Thread (new ThreadStart(ListenForIncommingRequests)); 		
 		tcpListenerThread.IsBackground = true; 		
@@ -49,20 +52,25 @@ public class TCPTestServer : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () { 
+		// Don't send until sensor suite is stabilized, which means that it must initialized to send home state to PX4
+		if (!gameObject.GetComponent<SensorSuite>().init)
+			return;
+
 		SendMessage();         
 	}  	
 	
 	/// <summary> 	
 	/// Runs in background TcpServerThread; Handles incomming TcpClient requests 	
 	/// </summary> 	
-	private void ListenForIncommingRequests () { 		
+	private void ListenForIncommingRequests () { 	
 		try { 			
 			// Create listener on localhost port 8052. 			
 			tcpListener = new TcpListener(IPAddress.Parse(conHost), conPort); 			
-			tcpListener.Start();              
+			tcpListener.Start();    
+			// Server starting          
 			Debug.Log("Server is listening");              
 			Byte[] bytes = new Byte[1024];  			
-			while (true) { 				
+			while (isOpen) { 				
                 MAVLink.MAVLinkMessage packet;
 				using (connectedTcpClient = tcpListener.AcceptTcpClient()) { 					
 					// Get a stream object for reading 					
@@ -125,4 +133,12 @@ public class TCPTestServer : MonoBehaviour {
 			Debug.Log("Socket exception: " + socketException);         
 		} 	
 	} 
+
+	void OnApplicationQuit()
+	{
+		isOpen = false;
+		tcpListener.Stop();
+		// wait for listening thread to terminate (max. 500ms)
+		tcpListenerThread.Join(500);
+	}
 }
