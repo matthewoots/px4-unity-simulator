@@ -1,4 +1,21 @@
-﻿using System;
+﻿/*
+
+Created by Matthew Woo 2022
+Contact: matthewoots@gmail.com
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+*/
+
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -12,26 +29,6 @@ namespace RapidGUI.Example
     {
 
         public GameObject Object;
-
-        // public string stringVal;
-        // public bool boolVal;
-        // public int intVal;
-        // public float floatVal;
-        // public Color colorVal;
-
-        // public Vector2 vector2Val;
-        // public Vector3 vector3Val;
-        // public Vector4 vector4Val;
-        // public Vector2Int vector2IntVal;
-        // public Vector3Int vector3IntVal;
-        // public Rect rectVal;
-        // public RectInt rectIntVal;
-        // public RectOffset rectOffsetVal;
-        // public Bounds boundsVal;
-        // public BoundsInt boundsIntVal;        
-
-        // public float[] arrayVal;
-        // public List<int> listVal;
 
         protected override string title => "RGUI.PX4Field()s";
 
@@ -68,37 +65,6 @@ namespace RapidGUI.Example
             int gps_alt = _gps.alt;
             int gps_altVal =  RGUI.Field(gps_alt, "GPS alt");
 
-            // stringVal = RGUI.Field(stringVal, "string");
-            // boolVal = RGUI.Field(boolVal, "bool");
-            // intVal = RGUI.Field(intVal, "int");
-            // floatVal = RGUI.Field(floatVal, "float");
-            // colorVal = RGUI.Field(colorVal, "color");
-
-            // vector2Val = RGUI.Field(vector2Val, "vector2");
-            // vector3Val = RGUI.Field(vector3Val, "vector3");
-            // vector4Val = RGUI.Field(vector4Val, "vector4");
-            // vector2IntVal = RGUI.Field(vector2IntVal, "vector2Int");
-            // vector3IntVal = RGUI.Field(vector3IntVal, "vector3Int");
-            // rectVal = RGUI.Field(rectVal, "rect");
-            // rectIntVal = RGUI.Field(rectIntVal, "rectInt");
-            // rectOffsetVal = RGUI.Field(rectOffsetVal, "rectOffset");
-            // boundsVal = RGUI.Field(boundsVal, "bounds");
-            // boundsIntVal = RGUI.Field(boundsIntVal, "boundsInt");
-            // arrayVal = RGUI.Field(arrayVal, "array");
-            // listVal = RGUI.Field(listVal, "list");
-
-            // listVal = RGUI.ListField(listVal, "list with custom element GUI", (list, idx, label) =>
-            // {
-            //     using (new GUILayout.HorizontalScope())
-            //     {
-            //         var v = list[idx];
-            //         v = RGUI.Slider(v, 100, label);
-            //         if (GUILayout.Button("+")) v++;
-            //         if (GUILayout.Button("-")) v--;
-
-            //         return v;
-            //     }
-            // });
         }
 
         public static Vector3 return_in_dp(Vector3 vector3, int decimalPlaces)
